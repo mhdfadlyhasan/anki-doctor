@@ -71,10 +71,14 @@ dedicated `fields` table instead of parsing `config`.
 ### `make <word>`
 
 1. `get_field_names` (AnkiConnect) fetches the target note type's fields.
-2. `make_card_prompt` asks the model for a JSON object keyed by those fields.
+2. `make_card_prompt` derives a per-field instruction from each field name
+   (`describe_field`) and asks the model for a JSON object keyed by those fields.
 3. `parse_json` extracts the object (tolerates markdown fences / stray prose).
-4. `add_note` inserts the note into the target deck.
-5. With `--dry-run`, prints the prepared fields and deck without writing anything.
+4. `find_duplicate` checks the note against Anki's duplicate rule (`canAddNotes`);
+   if an equivalent note already exists, its fields are printed and nothing is
+   written (the command exits non-zero).
+5. `add_note` inserts the note into the target deck.
+6. With `--dry-run`, prints the prepared fields and deck without writing anything.
 
 ### `check [--suggest] [--apply]`
 
@@ -89,7 +93,9 @@ dedicated `fields` table instead of parsing `config`.
 
 - Single shared `SYSTEM_PROMPT` forces a strict JSON-only response, and requests are sent
   with Ollama's `format=json` so the model is steered toward valid JSON.
-- `make` asks for all fields at once (the model fills the ones it can).
+- `make` asks for all fields at once (the model fills the ones it can), deriving an
+  instruction for each *actual* field name via `describe_field`. Unknown field names
+  fall back to a generic instruction, so any note type works.
 - `suggest_fill` asks for exactly one missing field, conditioned on the note's existing
   content — this keeps context small and relevance high.
 - `parse_json` is defensive: strips code fences, falls back to the first `{...}`/`[...]`
@@ -102,6 +108,7 @@ dedicated `fields` table instead of parsing `config`.
 | Ollama not running           | `OllamaError` with a clear message                                    |
 | Anki/AnkiConnect not running | `AnkiConnectError` with a clear message                               |
 | Model returns non-JSON       | `parse_json` fallback; `make` exits non-zero, `check` prints raw text |
+| Duplicate note exists        | `find_duplicate` reports the existing note and exits non-zero; no write |
 | Unknown note type            | `scan_notes` raises `ValueError`                                      |
 | Collection schema mismatch   | scanner is read-only; writes are always via AnkiConnect               |
 
