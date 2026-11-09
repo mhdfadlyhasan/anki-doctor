@@ -28,6 +28,13 @@ def cmd_make(args):
         sys.exit(1)
 
     note_fields = {f: data.get(f, "") for f in fields}
+    if args.dry_run:
+        print(f"Dry run: would add note to deck '{args.deck}' ({args.notetype})")
+        for name, value in note_fields.items():
+            print(f"  {name}: {value}")
+        if args.tags:
+            print(f"  tags: {', '.join(args.tags)}")
+        return
     note_id = anki.add_note(args.notetype, note_fields, deck=args.deck, tags=args.tags)
     print(f"Added note {note_id} to deck '{args.deck}'")
 
@@ -76,6 +83,9 @@ def _build_parser():
     make.add_argument("--deck", default="Default")
     make.add_argument("--notetype", default=DEFAULT_NOTE_TYPE)
     make.add_argument("--tags", nargs="*", default=[])
+    make.add_argument(
+        "--dry-run", action="store_true", help="preview the card without writing it"
+    )
     make.set_defaults(func=cmd_make)
 
     check = sub.add_parser("check", help="find notes with empty fields")

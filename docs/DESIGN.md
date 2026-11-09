@@ -74,6 +74,7 @@ dedicated `fields` table instead of parsing `config`.
 2. `make_card_prompt` asks the model for a JSON object keyed by those fields.
 3. `parse_json` extracts the object (tolerates markdown fences / stray prose).
 4. `add_note` inserts the note into the target deck.
+5. With `--dry-run`, prints the prepared fields and deck without writing anything.
 
 ### `check [--suggest] [--apply]`
 
@@ -96,17 +97,16 @@ dedicated `fields` table instead of parsing `config`.
 
 ## Safety & failure modes
 
-| Failure | Handling |
-|---|---|
-| Ollama not running | `OllamaError` with a clear message |
-| Anki/AnkiConnect not running | `AnkiConnectError` with a clear message |
-| Model returns non-JSON | `parse_json` fallback; `make` exits non-zero, `check` prints raw text |
-| Unknown note type | `scan_notes` raises `ValueError` |
-| Collection schema mismatch | scanner is read-only; writes are always via AnkiConnect |
+| Failure                      | Handling                                                              |
+| ---------------------------- | --------------------------------------------------------------------- |
+| Ollama not running           | `OllamaError` with a clear message                                    |
+| Anki/AnkiConnect not running | `AnkiConnectError` with a clear message                               |
+| Model returns non-JSON       | `parse_json` fallback; `make` exits non-zero, `check` prints raw text |
+| Unknown note type            | `scan_notes` raises `ValueError`                                      |
+| Collection schema mismatch   | scanner is read-only; writes are always via AnkiConnect               |
 
 ## Future work
 
 - `--model` flag already exists; swap `llama3.2:3b` for `qwen2.5:7b` (better Japanese).
-- Add `--dry-run` for `make` to preview the generated card before writing.
 - Batch `check --suggest` requests or dedupe identical missing-field contexts.
 - Config file (`~/.config/anki-doctor.toml`) for deck, note type, and model defaults.
