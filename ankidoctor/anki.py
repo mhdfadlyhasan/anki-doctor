@@ -56,6 +56,44 @@ def get_field_names(model_name):
     return _request("modelFieldNames", modelName=model_name)
 
 
+def notes_info(note_ids):
+    if not note_ids:
+        return []
+    return _request("notesInfo", notes=note_ids)
+
+
+def find_duplicate(model_name, fields, deck="Default"):
+    """Return notesInfo for an existing colliding note, or None."""
+    candidate = {
+        "deckName": deck,
+        "modelName": model_name,
+        "fields": fields,
+        "tags": [],
+    }
+    can_add = _request("canAddNotes", notes=[candidate])
+    if can_add and can_add[0]:
+        return None
+
+    first_value = next(
+        (value for value in fields.values() if value and value.strip()), ""
+    )
+    first_value = first_value.replace('"', "").strip()
+    if not first_value:
+        return None
+
+    safe_model = model_name.replace('"', "")
+    ids = _request(
+        "findNotes", query=f'note:"{safe_model}" "{first_value}"'
+    ) or []
+    for info in notes_info(ids):
+        if info.get("modelName") != model_name:
+            continue
+        values = list(info.get("fields", {}).values())
+        if values and values[0].get("value", "").strip() == first_value:
+            return info
+    return None
+
+
 def _open_readonly(path):
     return sqlite3.connect(f"file:{path}?mode=ro", uri=True)
 

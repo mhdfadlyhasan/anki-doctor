@@ -9,19 +9,41 @@ SYSTEM_PROMPT = (
 )
 
 
+def describe_field(name):
+    """Return a one-line instruction for what belongs in a field."""
+    key = re.sub(r"[^a-z0-9]", "", name.lower())
+    if "sentencemeaning" in key or "senttrans" in key:
+        return "English translation of the example sentence"
+    if "sentence" in key or "example" in key:
+        return "a natural example sentence using the word"
+    if "reading" in key or "kana" in key or "furigana" in key or "よみ" in name:
+        return "hiragana reading of the word"
+    if any(t in key for t in ("meaning", "definition", "gloss", "english")):
+        return "concise English definition"
+    if "link" in key or "url" in key:
+        return "an empty string"
+    if any(t in key for t in ("image", "picture", "audio", "sound", "media")):
+        return "an empty string"
+    if "note" in key or "usage" in key:
+        return "optional usage note, or an empty string"
+    if any(
+        t in key
+        for t in ("japanese", "word", "expression", "vocab", "term", "kanji", "front")
+    ):
+        return "the word or phrase as written in Japanese"
+    return f"appropriate content for the field named {name!r}"
+
+
 def make_card_prompt(word, fields):
-    names = ", ".join(f'"{f}"' for f in fields)
+    instructions = "\n".join(
+        f'- "{name}": {describe_field(name)}' for name in fields
+    )
     return (
         f"For the Japanese word or phrase: {word!r}\n"
-        f"Return a JSON object with exactly these keys: {names}\n"
-        "Rules:\n"
-        '- "Japanese": the word itself\n'
-        '- "Reading": hiragana reading of the word\n'
-        '- "Meaning": concise English definition\n'
-        '- "Sentence": a natural example sentence using the word\n'
-        '- "SentenceMeaning": English translation of Sentence\n'
-        '- "Note": optional usage note or empty string\n'
-        '- "Link": empty string\n'
+        "Return a JSON object with exactly these keys:\n"
+        f"{instructions}\n"
+        "Respond with valid JSON only and no prose. Use empty strings for "
+        "fields that should stay blank.\n"
     )
 
 

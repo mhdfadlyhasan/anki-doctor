@@ -35,6 +35,18 @@ def cmd_make(args):
         if args.tags:
             print(f"  tags: {', '.join(args.tags)}")
         return
+
+    existing = anki.find_duplicate(args.notetype, note_fields, deck=args.deck)
+    if existing:
+        print(
+            f"Note already exists (id {existing.get('noteId')}) in "
+            f"'{args.deck}'; nothing added.",
+            file=sys.stderr,
+        )
+        for name, field in existing.get("fields", {}).items():
+            print(f"  {name}: {field.get('value', '')}", file=sys.stderr)
+        sys.exit(2)
+
     note_id = anki.add_note(args.notetype, note_fields, deck=args.deck, tags=args.tags)
     print(f"Added note {note_id} to deck '{args.deck}'")
 
